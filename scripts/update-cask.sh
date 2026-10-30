@@ -29,13 +29,15 @@ cask "deskjump" do
   desc "Menu bar desktop switcher: click a number to jump to that desktop"
   homepage "https://github.com/kaifacun/deskjump"
 
-  depends_on macos: ">= :ventura"
+  depends_on macos: :ventura
 
   app "DeskJump.app"
 
-  postflight do
-    system_command "/usr/bin/open", args: ["#{appdir}/DeskJump.app"]
-  end
+  caveats <<~EOS
+    Open DeskJump once to finish setup:
+      open -a DeskJump
+    Then allow it in System Settings > Privacy & Security > Accessibility.
+  EOS
 
   uninstall quit: "com.kaifacun.deskjump"
 
