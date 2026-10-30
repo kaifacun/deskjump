@@ -71,29 +71,6 @@ gh run watch -R kaifacun/deskjump
 
 비밀값을 잃거나 바꿔야 하면 같은 스크립트를 다시 실행하면 된다.
 
----|---|
-| `DEVELOPER_ID_CERT_P12_BASE64` | *Developer ID Application* 인증서와 개인 키를 내보낸 `.p12` 의 base64 |
-| `DEVELOPER_ID_CERT_PASSWORD` | 그 `.p12` 의 암호 |
-| `APPLE_ID` | 공증에 쓰는 Apple ID |
-| `APPLE_TEAM_ID` | 10자리 Team ID |
-| `APPLE_APP_PASSWORD` | [account.apple.com](https://account.apple.com) 에서 만든 앱 암호 |
-| `TAP_DEPLOY_KEY` | `kaifacun/homebrew-tap` 에 쓰기 권한으로 등록한 배포 키(SSH)의 개인 키 |
-
-```bash
-gh secret set DEVELOPER_ID_CERT_P12_BASE64 -R kaifacun/deskjump --body "$(base64 -i DeveloperID.p12)"
-gh secret set DEVELOPER_ID_CERT_PASSWORD  -R kaifacun/deskjump
-gh secret set APPLE_ID                     -R kaifacun/deskjump
-gh secret set APPLE_TEAM_ID                -R kaifacun/deskjump
-gh secret set APPLE_APP_PASSWORD           -R kaifacun/deskjump
-ssh-keygen -t ed25519 -N "" -C deskjump-release -f tap_key
-gh repo deploy-key add tap_key.pub -R kaifacun/homebrew-tap --allow-write --title deskjump-release
-gh secret set TAP_DEPLOY_KEY -R kaifacun/deskjump < tap_key
-rm tap_key tap_key.pub
-gh secret list -R kaifacun/deskjump
-```
-
-`.p12` 만드는 법: Xcode › Settings › Apple Accounts › Manage Certificates… › **Developer ID Application** 우클릭 › **Export Certificate**.
-
 ---
 
 ## B. 서명 인증서가 있는 맥에서 배포하기
