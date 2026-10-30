@@ -24,7 +24,7 @@ macOS lets you create several desktops (Spaces), but there's no built-in way to 
 - **Click a number** to jump straight to that desktop.
 - **Full-screen apps** show up as `F`.
 - **Multiple displays** with *Displays have separate Spaces* turned on: DeskJump shows the desktops of the display your mouse is on.
-- **Right-click** for settings: launch at login, instant switching, open Mission Control, quit.
+- **Right-click** for settings: check for updates, launch at login, instant switching, open Mission Control, quit.
 
 ## Install
 
@@ -45,6 +45,10 @@ open -a DeskJump
 DeskJump needs macOS 13 Ventura or later and runs on Apple silicon and Intel Macs.
 
 ## Update
+
+DeskJump checks GitHub for a new version once a day. When there is one, a small dot appears next to the numbers. Right-click › **Update to DeskJump x.y.z…** downloads it, checks that it's signed by the DeskJump developer and notarized by Apple, replaces the app and restarts it. You can also check any time with right-click › **Check for Updates…**.
+
+With Homebrew:
 
 ```bash
 brew update
@@ -81,7 +85,7 @@ On first launch DeskJump:
   - After a direct jump it checks that it landed on the right desktop and corrects with arrow steps if not.
 - **Clicks on the strip:** recent macOS versions deliver every status-item click at the item's center. DeskJump therefore uses the real mouse position to work out which number you clicked.
 
-DeskJump makes no network connections and collects no data.
+The only network request DeskJump makes is the update check against the GitHub Releases API (once a day, or when you choose *Check for Updates…*). It collects no data.
 
 ## Troubleshooting
 

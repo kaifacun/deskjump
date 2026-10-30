@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var display: DisplaySpaces?
     private var refreshTimer: Timer?
+    private let updater = Updater()
 
     //#region 레이아웃 상수
     private let cellWidth: CGFloat = 18
@@ -36,6 +37,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         refresh()
         runSwitchArgumentIfNeeded()
+
+        // 새 버전이 확인되면 메뉴바에 점을 표시
+        updater.onChange = { [weak self] in self?.redraw() }
+        updater.startAutomaticChecks()
     }
 
     /// 명령줄 확인용: `open DeskJump.app --args --switch N` 으로 N번째 칸(1부터)으로 이동
@@ -66,13 +71,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let latest = SpaceReader.readForMouseDisplay()
         guard latest != display || statusItem.button?.image == nil else { return }
         display = latest
-        statusItem.button?.image = renderImage(for: latest)
+        redraw()
+    }
+
+    private func redraw() {
+        statusItem.button?.image = renderImage(for: display)
     }
 
     private func renderImage(for display: DisplaySpaces?) -> NSImage {
         let spaces = display?.spaces ?? []
         let count = max(spaces.count, 1)
-        let width = sidePadding * 2 + CGFloat(count) * cellWidth + CGFloat(count - 1) * cellGap
+        let showsUpdateDot = updater.available != nil
+        let cellsWidth = sidePadding * 2 + CGFloat(count) * cellWidth + CGFloat(count - 1) * cellGap
+        // 업데이트 알림 점은 숫자 칸 오른쪽 위에 붙인다 (칸 위치는 그대로라 클릭 계산에 영향 없음)
+        let width = cellsWidth + (showsUpdateDot ? 6 : 0)
         let height: CGFloat = 18
 
         let image = NSImage(size: NSSize(width: width, height: height), flipped: false) { [self] _ in
@@ -103,6 +115,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let textRect = NSRect(x: rect.minX, y: rect.midY - textHeight / 2, width: rect.width, height: textHeight)
                 (label as NSString).draw(in: textRect, withAttributes: attrs)
                 ctx.setBlendMode(.normal)
+            }
+
+            if showsUpdateDot {
+                NSColor.black.setFill()
+                NSBezierPath(ovalIn: NSRect(x: cellsWidth, y: height - 7, width: 5, height: 5)).fill()
             }
             return true
         }
@@ -153,6 +170,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let buttonOriginX = button.convert(NSPoint.zero, to: nil).x
         let imageWidth = button.image?.size.width ?? 0
+        // 이미지는 버튼 가운데 정렬. 업데이트 점은 이미지 오른쪽 끝에 붙으므로 칸의 x 위치는 바뀌지 않는다
         let imageOffset = (button.bounds.width - imageWidth) / 2
         return xInWindow - buttonOriginX - imageOffset
     }
@@ -178,11 +196,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         menu.addItem(.separator())
+        if let release = updater.available {
+            menu.addItem(actionItem("Update to DeskJump \(release.version)…", #selector(installUpdate)))
+        }
+        menu.addItem(actionItem("Check for Updates…", #selector(checkForUpdates)))
         let loginItem = actionItem("Launch at Login", #selector(toggleLaunchAtLogin))
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(loginItem)
         menu.addItem(actionItem("Open Mission Control", #selector(openMissionControl)))
         menu.addItem(.separator())
+        menu.addItem(disabledItem("DeskJump \(Updater.currentVersion)"))
         menu.addItem(actionItem("Quit DeskJump", #selector(quit)))
 
         statusItem.menu = menu
@@ -231,6 +254,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSSound.beep()
         }
     }
+
+    //#region 업데이트
+    @objc private func checkForUpdates() {
+        updater.check { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(let release?):
+                self.confirmInstall(release)
+            case .success(nil):
+                self.showAlert("DeskJump is up to date.", "You have the latest version (\(Updater.currentVersion)).")
+            case .failure(let error):
+                self.showAlert("Couldn't check for updates.", error.localizedDescription)
+            }
+        }
+    }
+
+    @objc private func installUpdate() {
+        guard let release = updater.available else { return }
+        confirmInstall(release)
+    }
+
+    private func confirmInstall(_ release: Updater.Release) {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = "DeskJump \(release.version) is available."
+        alert.informativeText = "You have \(Updater.currentVersion). DeskJump will download the update, verify it and restart."
+        alert.addButton(withTitle: "Update")
+        alert.addButton(withTitle: "Later")
+        alert.addButton(withTitle: "Release Notes")
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:
+            updater.install(release) { [weak self] error in
+                guard let error else { return }
+                self?.showAlert("Update failed.", error.localizedDescription, link: release.pageURL)
+            }
+        case .alertThirdButtonReturn:
+            NSWorkspace.shared.open(release.pageURL)
+        default:
+            break
+        }
+    }
+
+    private func showAlert(_ title: String, _ message: String, link: URL? = nil) {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.addButton(withTitle: "OK")
+        if link != nil { alert.addButton(withTitle: "Open Release Page") }
+        if alert.runModal() == .alertSecondButtonReturn, let link {
+            NSWorkspace.shared.open(link)
+        }
+    }
+    //#endregion
 
     @objc private func quit() { NSApp.terminate(nil) }
     //#endregion
