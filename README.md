@@ -8,6 +8,10 @@
   Your macOS desktops as numbers in the menu bar. Click one to jump straight to it.
 </p>
 
+<p align="center">
+  <img src="docs/demo.gif" width="345" alt="Clicking 3, 2, 1 in the menu bar switches to that desktop; the filled box follows the current desktop">
+</p>
+
 ---
 
 macOS lets you create several desktops (Spaces), but there's no built-in way to see how many you have, which one you're on, or to jump to one with a click. DeskJump adds a small strip to the menu bar:

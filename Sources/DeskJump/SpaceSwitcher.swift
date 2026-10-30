@@ -99,15 +99,44 @@ enum SpaceSwitcher {
     //#endregion
 
     //#region 키 입력 전송
+    // 수정키(⌃⌥⇧⌘)는 실제 키보드처럼 눌렀다가 떼는 이벤트까지 보내야 한다.
+    // 플래그만 실어 보내면 시스템의 수정키 상태가 눌린 채로 남아, 다음 클릭이 ⌃클릭이 되는 등 다른 입력이 오염된다.
+    private static let modifierKeys: [(flag: CGEventFlags, keyCode: CGKeyCode)] = [
+        (.maskControl, 59), (.maskAlternate, 58), (.maskShift, 56), (.maskCommand, 55),
+    ]
+
     private static func post(_ key: Hotkey) {
         debugLog("post keyCode=\(key.keyCode) flags=0x\(String(key.flags.rawValue, radix: 16))")
-        let source = CGEventSource(stateID: .hidSystemState)
-        let down = CGEvent(keyboardEventSource: source, virtualKey: key.keyCode, keyDown: true)
-        let up = CGEvent(keyboardEventSource: source, virtualKey: key.keyCode, keyDown: false)
-        down?.flags = key.flags
-        up?.flags = key.flags
-        down?.post(tap: .cghidEventTap)
-        up?.post(tap: .cghidEventTap)
+        // 사용자가 실제로 누르고 있는 키 상태와 섞이지 않도록 독립된 이벤트 소스 사용
+        let source = CGEventSource(stateID: .privateState)
+        func send(_ keyCode: CGKeyCode, down: Bool, flags: CGEventFlags) {
+            let event = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: down)
+            event?.flags = flags
+            event?.post(tap: .cghidEventTap)
+            // 연속으로 몰아 보내면 전환 처리 중에 일부 이벤트가 유실될 수 있어 간격을 둔다
+            usleep(8_000)
+        }
+
+        let modifiers = modifierKeys.filter { key.flags.contains($0.flag) }
+        var held: CGEventFlags = []
+        for modifier in modifiers {
+            held.insert(modifier.flag)
+            send(modifier.keyCode, down: true, flags: held)
+        }
+        send(key.keyCode, down: true, flags: key.flags)
+        send(key.keyCode, down: false, flags: key.flags)
+        for modifier in modifiers.reversed() {
+            held.remove(modifier.flag)
+            send(modifier.keyCode, down: false, flags: held)
+        }
+
+        // 데스크탑 전환 애니메이션 중 떼기 이벤트가 유실되는 경우가 있어, 잠시 뒤 한 번 더 뗀다
+        guard !modifiers.isEmpty else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(250)) {
+            for modifier in modifiers {
+                send(modifier.keyCode, down: false, flags: [])
+            }
+        }
     }
     //#endregion
 
