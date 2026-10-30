@@ -112,6 +112,7 @@ gh run watch -R kaifacun/deskjump
 - 태그 `v1.2.3` 이 곧 앱 버전 `1.2.3` 이 된다. `CFBundleShortVersionString` 과 zip 파일 이름에 들어간다.
 - 이미 쓴 버전 번호는 다시 쓸 수 없다. 매번 올린다.
 - **번들 ID `com.kaifacun.deskjump` 와 서명 팀은 바꾸지 않는다.** 바꾸면 macOS 가 다른 앱으로 보고, 모든 사용자가 손쉬운 사용 권한을 다시 켜야 한다.
+- **Release 파일 이름은 `DeskJump-<버전>.zip` 그대로 둔다.** 앱 안의 업데이트 기능이 이 이름으로 파일을 찾는다. 또 팀 `2Z8PMQ5YFB` 의 Developer ID 서명과 공증이 확인된 앱만 설치하므로, 다른 팀으로 서명하면 앱 안에서 업데이트되지 않는다.
 
 ## 문제가 생겼을 때
 
