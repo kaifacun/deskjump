@@ -31,7 +31,6 @@ brew install --cask kaifacun/tap/deskjump
 open -a DeskJump
 ```
 
-This always installs the latest version. You don't need to run `brew update` first.
 
 ### Manual
 
@@ -44,8 +43,11 @@ DeskJump needs macOS 13 Ventura or later and runs on Apple silicon and Intel Mac
 ## Update
 
 ```bash
+brew update
 brew upgrade --cask deskjump
 ```
+
+Run `brew update` first. Homebrew refreshes taps only once in a while on its own, so without it `brew upgrade` may report that the latest version is already installed.
 
 If you installed manually, download the new zip and replace `/Applications/DeskJump.app`.
 
