@@ -28,7 +28,10 @@ macOS lets you create several desktops (Spaces), but there's no built-in way to 
 
 ```bash
 brew install --cask kaifacun/tap/deskjump
+open -a DeskJump
 ```
+
+This always installs the latest version. You don't need to run `brew update` first.
 
 ### Manual
 
@@ -37,6 +40,23 @@ brew install --cask kaifacun/tap/deskjump
 3. Open it.
 
 DeskJump needs macOS 13 Ventura or later and runs on Apple silicon and Intel Macs.
+
+## Update
+
+```bash
+brew upgrade --cask deskjump
+```
+
+If you installed manually, download the new zip and replace `/Applications/DeskJump.app`.
+
+Updates are signed with the same Developer ID, so you don't need to grant Accessibility access again.
+
+> **Upgrading from 1.0.0:** version 1.0.0 assigned the desktop shortcuts to `⌃1` … `⌃0`. These often clash with other apps' shortcuts (for example, a screenshot tool on `⌃1` would fire together with the desktop switch). Newer versions use `⌃⌥⇧1` … `⌃⌥⇧0` instead, but they don't change shortcuts that are already set. To switch over:
+>
+> 1. Open *System Settings › Keyboard › Keyboard Shortcuts › Mission Control*.
+> 2. Change each "Switch to Desktop N" shortcut to `⌃⌥⇧N`, or to anything else you don't use.
+>
+> DeskJump uses whatever combination you set.
 
 ## First launch
 
