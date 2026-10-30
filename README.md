@@ -63,12 +63,11 @@ If you installed manually, download the new zip and replace `/Applications/DeskJ
 
 Updates are signed with the same Developer ID, so you don't need to grant Accessibility access again.
 
-> **Upgrading from 1.0.0:** version 1.0.0 assigned the desktop shortcuts to `⌃1` … `⌃0`. These often clash with other apps' shortcuts (for example, a screenshot tool on `⌃1` would fire together with the desktop switch). Newer versions use `⌃⌥⇧1` … `⌃⌥⇧0` instead, but they don't change shortcuts that are already set. To switch over:
+> **Shortcut conflicts (e.g. upgrading from 1.0.0):** version 1.0.0 assigned the desktop shortcuts to `⌃1` … `⌃0`. These often clash with other apps' shortcuts (for example, a screenshot tool on `⌃1` would fire together with the desktop switch). Newer versions use `⌃⌥⇧1` … `⌃⌥⇧0` instead, but they don't change shortcuts that are already set.
 >
-> 1. Open *System Settings › Keyboard › Keyboard Shortcuts › Mission Control*.
-> 2. Change each "Switch to Desktop N" shortcut to `⌃⌥⇧N`, or to anything else you don't use.
+> If your desktop shortcuts use a different combination, right-click › **Avoid Shortcut Conflicts (Use ⌃⌥⇧1…)…** switches them in one click. DeskJump first backs up your keyboard shortcut settings to `~/Library/Application Support/DeskJump/`, and right-click › **Restore Previous Shortcuts…** puts them back.
 >
-> DeskJump uses whatever combination you set.
+> You can also change them yourself in *System Settings › Keyboard › Keyboard Shortcuts › Mission Control*. DeskJump uses whatever combination you set.
 
 ## First launch
 

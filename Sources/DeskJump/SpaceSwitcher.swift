@@ -41,6 +41,69 @@ enum SpaceSwitcher {
     }
 
     static var hasDirectHotkeys: Bool { desktopHotkey(number: 1) != nil }
+
+    /// "데스크탑 1로 전환" 단축키의 수정키를 ⌃⌥⇧⌘ 기호로 (예: "⌃1", "⌃⌥⇧1")
+    static var directHotkeyDescription: String? {
+        guard let key = desktopHotkey(number: 1) else { return nil }
+        var text = ""
+        if key.flags.contains(.maskControl) { text += "⌃" }
+        if key.flags.contains(.maskAlternate) { text += "⌥" }
+        if key.flags.contains(.maskShift) { text += "⇧" }
+        if key.flags.contains(.maskCommand) { text += "⌘" }
+        return text + "1"
+    }
+
+    /// 직접 전환 단축키가 DeskJump 권장 조합(⌃⌥⇧)인지
+    static var usesSafeHotkeys: Bool {
+        guard let key = desktopHotkey(number: 1) else { return false }
+        let modifiers: CGEventFlags = [.maskControl, .maskAlternate, .maskShift, .maskCommand]
+        return key.flags.intersection(modifiers).rawValue == UInt64(directHotkeyModifiers)
+    }
+    //#endregion
+
+    //#region 단축키 백업·복원 (~/Library/Application Support/DeskJump)
+    private static var backupDirectory: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/DeskJump", isDirectory: true)
+    }
+
+    /// 가장 최근 백업 파일
+    static var latestHotkeyBackup: URL? {
+        let files = (try? FileManager.default.contentsOfDirectory(at: backupDirectory, includingPropertiesForKeys: nil)) ?? []
+        return files.filter { $0.lastPathComponent.hasPrefix("symbolichotkeys-") && $0.pathExtension == "plist" }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+            .last
+    }
+
+    /// 현재 키보드 단축키 설정 전체를 백업한 뒤, 데스크탑 전환 단축키를 ⌃⌥⇧+숫자로 바꾼다
+    @discardableResult
+    static func switchToSafeHotkeys() throws -> URL {
+        try FileManager.default.createDirectory(at: backupDirectory, withIntermediateDirectories: true)
+        let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+        let backup = backupDirectory.appendingPathComponent("symbolichotkeys-\(stamp).plist")
+        try runTool("/usr/bin/defaults", ["export", "com.apple.symbolichotkeys", backup.path])
+        enableDirectHotkeys()
+        return backup
+    }
+
+    /// 백업 파일로 키보드 단축키 설정을 되돌린다
+    static func restoreHotkeys(from backup: URL) throws {
+        try runTool("/usr/bin/defaults", ["import", "com.apple.symbolichotkeys", backup.path])
+        CFPreferencesAppSynchronize("com.apple.symbolichotkeys" as CFString)
+        activateHotkeySettings()
+    }
+
+    private static func runTool(_ path: String, _ arguments: [String]) throws {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: path)
+        task.arguments = arguments
+        try task.run()
+        task.waitUntilExit()
+        guard task.terminationStatus == 0 else {
+            throw NSError(domain: "DeskJump", code: Int(task.terminationStatus),
+                          userInfo: [NSLocalizedDescriptionKey: "\(path) failed (\(task.terminationStatus))"])
+        }
+    }
     //#endregion
 
     //#region "데스크탑 N(으)로 전환" 단축키 켜기 (⌃⌥⇧1 ~ ⌃⌥⇧0)
@@ -72,13 +135,12 @@ enum SpaceSwitcher {
         }
         CFPreferencesSetAppValue("AppleSymbolicHotKeys" as CFString, table as CFDictionary, domain)
         CFPreferencesAppSynchronize(domain)
+        activateHotkeySettings()
+    }
 
-        // 로그아웃 없이 바로 적용
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings")
-        task.arguments = ["-u"]
-        try? task.run()
-        task.waitUntilExit()
+    /// 바뀐 단축키 설정을 로그아웃 없이 바로 적용
+    private static func activateHotkeySettings() {
+        try? runTool("/System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings", ["-u"])
     }
     //#endregion
 

@@ -188,11 +188,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         if SpaceSwitcher.hasDirectHotkeys {
-            menu.addItem(disabledItem("✓ Instant switching enabled"))
+            menu.addItem(disabledItem("✓ Instant switching (\(SpaceSwitcher.directHotkeyDescription ?? "")…)"))
+            if !SpaceSwitcher.usesSafeHotkeys {
+                menu.addItem(actionItem("Avoid Shortcut Conflicts (Use ⌃⌥⇧1…)…", #selector(useSafeHotkeys)))
+            }
         } else {
             menu.addItem(disabledItem("Switching one desktop at a time (slow)"))
             menu.addItem(actionItem("Enable Instant Switching", #selector(enableInstantSwitching)))
             menu.addItem(actionItem("Open Keyboard Shortcuts Settings…", #selector(openKeyboardSettings)))
+        }
+        if SpaceSwitcher.latestHotkeyBackup != nil {
+            menu.addItem(actionItem("Restore Previous Shortcuts…", #selector(restoreHotkeys)))
         }
 
         menu.addItem(.separator())
@@ -233,6 +239,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func openKeyboardSettings() {
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension?Shortcuts")!)
     }
+
+    //#region 단축키 충돌 피하기 (백업 후 ⌃⌥⇧+숫자로 변경)
+    @objc private func useSafeHotkeys() {
+        let current = SpaceSwitcher.directHotkeyDescription ?? "the current shortcuts"
+        guard confirm("Switch desktop shortcuts to ⌃⌥⇧1 … ⌃⌥⇧0?",
+                      "Desktops are currently switched with \(current)…, which can also trigger other apps' shortcuts. DeskJump will back up your keyboard shortcut settings first, so you can restore them from this menu.",
+                      button: "Switch") else { return }
+        do {
+            let backup = try SpaceSwitcher.switchToSafeHotkeys()
+            showAlert("Desktop shortcuts are now ⌃⌥⇧1 … ⌃⌥⇧0.",
+                      "\(current.replacingOccurrences(of: "1", with: "N")) is free for other apps again.\n\nBackup: \(backup.path)")
+        } catch {
+            showAlert("Couldn't change the shortcuts.", error.localizedDescription)
+        }
+    }
+
+    @objc private func restoreHotkeys() {
+        guard let backup = SpaceSwitcher.latestHotkeyBackup,
+              confirm("Restore your previous keyboard shortcuts?",
+                      "This restores all keyboard shortcut settings from the backup DeskJump made:\n\(backup.lastPathComponent)",
+                      button: "Restore") else { return }
+        do {
+            try SpaceSwitcher.restoreHotkeys(from: backup)
+            showAlert("Previous shortcuts restored.", "Desktop switching now uses \(SpaceSwitcher.directHotkeyDescription.map { $0 + "…" } ?? "one-step-at-a-time switching").")
+        } catch {
+            showAlert("Couldn't restore the shortcuts.", error.localizedDescription)
+        }
+    }
+
+    private func confirm(_ title: String, _ message: String, button: String) -> Bool {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.addButton(withTitle: button)
+        alert.addButton(withTitle: "Cancel")
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+    //#endregion
 
     @objc private func enableInstantSwitching() {
         SpaceSwitcher.enableDirectHotkeys()
