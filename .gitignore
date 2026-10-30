@@ -1,0 +1,5 @@
+.build/
+.swiftpm/
+DeskJump.app/
+dist/
+.DS_Store

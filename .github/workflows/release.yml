@@ -1,0 +1,91 @@
+name: Release
+
+# Push a tag like v1.0.0 to build, sign, notarize and publish DeskJump,
+# then update the Homebrew cask in kaifacun/homebrew-tap.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Import Developer ID certificate
+        env:
+          CERT_P12_BASE64: ${{ secrets.DEVELOPER_ID_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          echo "$CERT_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/cert.p12"
+
+      - name: Build, sign and notarize
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          export VERSION="${GITHUB_REF_NAME#v}"
+          export SIGN_IDENTITY="$(security find-identity -v -p codesigning | awk -F'"' '/Developer ID Application/ {print $2; exit}')"
+          test -n "$SIGN_IDENTITY" || { echo "Developer ID Application certificate not found"; exit 1; }
+          ./build.sh --release
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "SHA256=$(cat dist/DeskJump-$VERSION.zip.sha256)" >> "$GITHUB_ENV"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "dist/DeskJump-$VERSION.zip" \
+            --title "DeskJump $VERSION" --generate-notes
+
+      - name: Update Homebrew cask
+        env:
+          GH_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+        run: |
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/kaifacun/homebrew-tap.git" tap
+          mkdir -p tap/Casks
+          cat > tap/Casks/deskjump.rb <<CASK
+          cask "deskjump" do
+            version "${VERSION}"
+            sha256 "${SHA256}"
+
+            url "https://github.com/kaifacun/deskjump/releases/download/v#{version}/DeskJump-#{version}.zip"
+            name "DeskJump"
+            desc "Menu bar desktop switcher: click a number to jump to that desktop"
+            homepage "https://github.com/kaifacun/deskjump"
+
+            depends_on macos: ">= :ventura"
+
+            app "DeskJump.app"
+
+            postflight do
+              system_command "/usr/bin/open", args: ["#{appdir}/DeskJump.app"]
+            end
+
+            uninstall quit: "com.kaifacun.deskjump"
+
+            zap trash: [
+              "~/Library/Logs/DeskJump.log",
+              "~/Library/Preferences/com.kaifacun.deskjump.plist",
+            ]
+          end
+          CASK
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/deskjump.rb
+          git commit -m "deskjump ${VERSION}"
+          git push
