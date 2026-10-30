@@ -24,7 +24,7 @@ macOS lets you create several desktops (Spaces), but there's no built-in way to 
 - **Click a number** to jump straight to that desktop.
 - **Full-screen apps** show up as `F`.
 - **Multiple displays** with *Displays have separate Spaces* turned on: DeskJump shows the desktops of the display your mouse is on.
-- **Right-click** for settings: check for updates, launch at login, instant switching, open Mission Control, quit.
+- **Right-click** for settings: check for updates, launch at login, instant switching, avoid shortcut conflicts (with backup and restore), open Mission Control, quit.
 
 ## Install
 
@@ -94,6 +94,7 @@ The only network request DeskJump makes is the update check against the GitHub R
 |---|---|
 | Clicking does nothing | Check that DeskJump is on in *Privacy & Security › Accessibility*. If it is, remove it with **−** and add it again. |
 | Jumps step through each desktop | Right-click › **Enable Instant Switching**, or turn on "Switch to Desktop N" in Keyboard Shortcuts. |
+| Clicking a number also triggers another app's shortcut (e.g. a screenshot tool on `⌃1`) | Right-click › **Avoid Shortcut Conflicts (Use ⌃⌥⇧1…)…**. Your shortcut settings are backed up first; right-click › **Restore Previous Shortcuts…** undoes it. |
 | Want logs | `defaults write com.kaifacun.deskjump DebugLogging -bool true`, then see `~/Library/Logs/DeskJump.log`. |
 
 ## Uninstall
