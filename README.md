@@ -87,13 +87,27 @@ cd deskjump
 
 ### Releasing (maintainers)
 
-Pushing a tag such as `v1.0.1` runs [`.github/workflows/release.yml`](.github/workflows/release.yml). The workflow:
+There are two ways to publish a release. Both build a Universal app, sign it with Developer ID, notarize it, publish a GitHub release and update the cask in [kaifacun/homebrew-tap](https://github.com/kaifacun/homebrew-tap).
 
-1. Builds, signs and notarizes the app.
-2. Publishes a GitHub release.
-3. Updates the cask in [kaifacun/homebrew-tap](https://github.com/kaifacun/homebrew-tap).
+**From a Mac that has the signing certificate:**
 
-It needs these repository secrets:
+```bash
+./release.sh 1.0.1
+```
+
+This needs, once per Mac:
+
+- the *Developer ID Application* certificate in the keychain
+- `xcrun notarytool store-credentials deskjump-notary --apple-id <email> --team-id <TEAMID>`
+- `gh auth login`
+
+**From any computer, via GitHub Actions:**
+
+```bash
+git tag v1.0.1 && git push origin v1.0.1
+```
+
+This runs [`.github/workflows/release.yml`](.github/workflows/release.yml). The workflow skips tags that `release.sh` already published. It needs these repository secrets:
 
 | Secret | Value |
 |---|---|

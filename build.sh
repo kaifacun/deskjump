@@ -11,6 +11,7 @@
 #                        then "Apple Development", then ad-hoc ("-")
 #   APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD
 #                        Notarization credentials (used by --release with a Developer ID identity)
+#   NOTARY_PROFILE       Alternatively, a keychain profile saved with `xcrun notarytool store-credentials`
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -86,16 +87,23 @@ if [[ "$MODE" == "--release" ]]; then
     ZIP="dist/DeskJump-${VERSION}.zip"
     rm -f "$ZIP"
 
-    if [[ "$SIGN_IDENTITY" == Developer\ ID* && -n "${APPLE_ID:-}" && -n "${APPLE_TEAM_ID:-}" && -n "${APPLE_APP_PASSWORD:-}" ]]; then
+    # 공증 인증 정보: 키체인 프로필(로컬) 또는 환경 변수(CI)
+    NOTARY_ARGS=()
+    if [[ -n "${NOTARY_PROFILE:-}" ]]; then
+        NOTARY_ARGS=(--keychain-profile "$NOTARY_PROFILE")
+    elif [[ -n "${APPLE_ID:-}" && -n "${APPLE_TEAM_ID:-}" && -n "${APPLE_APP_PASSWORD:-}" ]]; then
+        NOTARY_ARGS=(--apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD")
+    fi
+
+    if [[ "$SIGN_IDENTITY" == Developer\ ID* && ${#NOTARY_ARGS[@]} -gt 0 ]]; then
         # 공증 제출용 임시 zip → 공증 완료 후 티켓을 앱에 붙이고(staple) 최종 zip 생성
         ditto -c -k --keepParent "$APP" "dist/notarize.zip"
-        xcrun notarytool submit "dist/notarize.zip" --wait \
-            --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD"
+        xcrun notarytool submit "dist/notarize.zip" --wait "${NOTARY_ARGS[@]}"
         rm -f "dist/notarize.zip"
         xcrun stapler staple "$APP"
         spctl --assess --type execute --verbose "$APP"
     else
-        echo "warning: not notarized (needs a Developer ID identity and APPLE_ID / APPLE_TEAM_ID / APPLE_APP_PASSWORD)" >&2
+        echo "warning: not notarized (needs a Developer ID identity and NOTARY_PROFILE or APPLE_ID / APPLE_TEAM_ID / APPLE_APP_PASSWORD)" >&2
     fi
 
     ditto -c -k --keepParent "$APP" "$ZIP"
