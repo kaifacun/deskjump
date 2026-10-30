@@ -67,5 +67,5 @@ jobs:
       - name: Update Homebrew cask
         if: steps.check.outputs.skip != 'true'
         env:
-          TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+          TAP_DEPLOY_KEY: ${{ secrets.TAP_DEPLOY_KEY }}
         run: scripts/update-cask.sh "$VERSION" "$SHA256"

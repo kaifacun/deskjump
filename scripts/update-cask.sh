@@ -1,7 +1,7 @@
 #!/bin/bash
 # Homebrew tap(kaifacun/homebrew-tap)의 Casks/deskjump.rb 를 새 버전으로 갱신해 푸시한다
 # 사용법: scripts/update-cask.sh <version> <sha256>
-#   TAP_GITHUB_TOKEN 이 있으면 그 토큰으로(CI), 없으면 현재 git 인증으로(로컬) 푸시
+#   TAP_DEPLOY_KEY(SSH 개인 키)가 있으면 그 키로(CI), 없으면 현재 git 인증으로(로컬) 푸시
 set -euo pipefail
 VERSION="$1"
 SHA256="$2"
@@ -9,8 +9,12 @@ SHA256="$2"
 #region tap 저장소 받기
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
-if [[ -n "${TAP_GITHUB_TOKEN:-}" ]]; then
-    TAP_URL="https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/kaifacun/homebrew-tap.git"
+if [[ -n "${TAP_DEPLOY_KEY:-}" ]]; then
+    # homebrew-tap 저장소에 쓰기 권한으로 등록된 배포 키
+    printf '%s\n' "$TAP_DEPLOY_KEY" > "$WORK/deploy_key"
+    chmod 600 "$WORK/deploy_key"
+    export GIT_SSH_COMMAND="ssh -i $WORK/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+    TAP_URL="git@github.com:kaifacun/homebrew-tap.git"
 else
     TAP_URL="https://github.com/kaifacun/homebrew-tap.git"
 fi

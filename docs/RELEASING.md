@@ -50,7 +50,15 @@ gh run watch -R kaifacun/deskjump
 
 ### 처음 한 번: 저장소 비밀값 등록
 
-*Settings › Secrets and variables › Actions* 에 아래 6개가 있어야 한다. 없으면 서명 단계에서 실패한다.
+*Settings › Secrets and variables › Actions* 에 비밀값 6개가 있어야 한다. 없으면 서명 단계에서 실패한다. 아래 순서로 한 번에 등록한다.
+
+1. **인증서 내보내기**: Xcode › Settings › Apple Accounts › Manage Certificates… › **Developer ID Application** 우클릭 › **Export Certificate** 를 누른다. 정한 암호는 잘 적어 둔다.
+2. **앱 암호 만들기**: [account.apple.com](https://account.apple.com) › 로그인 및 보안 › 앱 암호 › 생성. 나온 값을 적어 둔다.
+3. **터미널에서 실행**:
+   ```bash
+   scripts/setup-ci-secrets.sh path/to/DeveloperID.p12
+   ```
+   두 암호를 물으면 입력한다. 스크립트가 tap 배포 키를 새로 만들어 등록하고, 비밀값 6개를 모두 넣는다.
 
 | 비밀값 | 값 |
 |---|---|
@@ -58,8 +66,18 @@ gh run watch -R kaifacun/deskjump
 | `DEVELOPER_ID_CERT_PASSWORD` | 그 `.p12` 의 암호 |
 | `APPLE_ID` | 공증에 쓰는 Apple ID |
 | `APPLE_TEAM_ID` | 10자리 Team ID |
+| `APPLE_APP_PASSWORD` | 앱 암호 |
+| `TAP_DEPLOY_KEY` | `kaifacun/homebrew-tap` 에 쓰기 권한으로 등록된 배포 키(SSH)의 개인 키 |
+
+비밀값을 잃거나 바꿔야 하면 같은 스크립트를 다시 실행하면 된다.
+
+---|---|
+| `DEVELOPER_ID_CERT_P12_BASE64` | *Developer ID Application* 인증서와 개인 키를 내보낸 `.p12` 의 base64 |
+| `DEVELOPER_ID_CERT_PASSWORD` | 그 `.p12` 의 암호 |
+| `APPLE_ID` | 공증에 쓰는 Apple ID |
+| `APPLE_TEAM_ID` | 10자리 Team ID |
 | `APPLE_APP_PASSWORD` | [account.apple.com](https://account.apple.com) 에서 만든 앱 암호 |
-| `TAP_GITHUB_TOKEN` | `kaifacun/homebrew-tap` 에 *Contents: Read and write* 권한이 있는 Fine-grained 토큰 |
+| `TAP_DEPLOY_KEY` | `kaifacun/homebrew-tap` 에 쓰기 권한으로 등록한 배포 키(SSH)의 개인 키 |
 
 ```bash
 gh secret set DEVELOPER_ID_CERT_P12_BASE64 -R kaifacun/deskjump --body "$(base64 -i DeveloperID.p12)"
@@ -67,7 +85,10 @@ gh secret set DEVELOPER_ID_CERT_PASSWORD  -R kaifacun/deskjump
 gh secret set APPLE_ID                     -R kaifacun/deskjump
 gh secret set APPLE_TEAM_ID                -R kaifacun/deskjump
 gh secret set APPLE_APP_PASSWORD           -R kaifacun/deskjump
-gh secret set TAP_GITHUB_TOKEN             -R kaifacun/deskjump
+ssh-keygen -t ed25519 -N "" -C deskjump-release -f tap_key
+gh repo deploy-key add tap_key.pub -R kaifacun/homebrew-tap --allow-write --title deskjump-release
+gh secret set TAP_DEPLOY_KEY -R kaifacun/deskjump < tap_key
+rm tap_key tap_key.pub
 gh secret list -R kaifacun/deskjump
 ```
 
@@ -121,7 +142,7 @@ gh secret list -R kaifacun/deskjump
 |---|---|
 | Actions 가 `Developer ID Application certificate not found` 로 실패 | `DEVELOPER_ID_CERT_P12_BASE64` / `DEVELOPER_ID_CERT_PASSWORD` 비밀값 |
 | 공증 단계에서 인증 실패 | `APPLE_ID` / `APPLE_TEAM_ID` / `APPLE_APP_PASSWORD`. 앱 암호는 새로 만들어 덮어쓰면 된다 |
-| Cask 갱신 단계에서 403 | `TAP_GITHUB_TOKEN` 만료 또는 권한 부족 |
+| Cask 갱신 단계에서 `Permission denied (publickey)` | homebrew-tap › Settings › Deploy keys 에 쓰기 권한 키가 있는지 확인. `scripts/setup-ci-secrets.sh` 를 다시 실행 |
 | 인증서 만료 | Xcode 에서 같은 팀으로 재발급 → 새 `.p12` 로 비밀값 갱신. 이미 배포된 버전은 계속 열린다 |
 | 잘못 배포함 | `gh release delete v1.0.1 --cleanup-tag` 후 더 높은 버전으로 다시 배포. 이미 받은 사용자를 위해 **같은 번호는 재사용하지 않는다** |
 
