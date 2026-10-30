@@ -170,10 +170,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         if SpaceSwitcher.hasDirectHotkeys {
-            menu.addItem(disabledItem("✓ Instant switching enabled (Ctrl+1–0)"))
+            menu.addItem(disabledItem("✓ Instant switching enabled"))
         } else {
             menu.addItem(disabledItem("Switching one desktop at a time (slow)"))
-            menu.addItem(actionItem("Enable Instant Switching (Ctrl+1–0)", #selector(enableInstantSwitching)))
+            menu.addItem(actionItem("Enable Instant Switching", #selector(enableInstantSwitching)))
             menu.addItem(actionItem("Open Keyboard Shortcuts Settings…", #selector(openKeyboardSettings)))
         }
 

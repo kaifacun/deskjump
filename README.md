@@ -44,7 +44,7 @@ On first launch DeskJump:
 
 1. **Asks for Accessibility access.** Turn on **DeskJump** in *System Settings › Privacy & Security › Accessibility*. DeskJump needs this to send the keyboard shortcut that switches desktops. It works as soon as you flip the switch, with no relaunch.
 2. **Registers itself to launch at login.** You can turn this off from the right-click menu or in *System Settings › General › Login Items*.
-3. **Turns on macOS's "Switch to Desktop 1–10" shortcuts** (`⌃1` … `⌃0`) if none are set up yet, so clicks jump directly instead of stepping one desktop at a time. These are standard shortcuts in *System Settings › Keyboard › Keyboard Shortcuts › Mission Control*, and you can turn them off there. Note that `⌃1`–`⌃0` will then switch desktops in every app.
+3. **Turns on macOS's "Switch to Desktop 1–10" shortcuts** if none are set up yet, so clicks jump directly instead of stepping one desktop at a time. DeskJump assigns them to `⌃⌥⇧1` … `⌃⌥⇧0`, a combination apps rarely use, so it doesn't collide with common `⌃1`-style shortcuts (e.g. screenshot tools). You never press these yourself. They are standard shortcuts in *System Settings › Keyboard › Keyboard Shortcuts › Mission Control*, and you can change or turn them off there. DeskJump uses whatever combination is set.
 
 ## How it works
 

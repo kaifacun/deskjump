@@ -43,7 +43,10 @@ enum SpaceSwitcher {
     static var hasDirectHotkeys: Bool { desktopHotkey(number: 1) != nil }
     //#endregion
 
-    //#region "데스크탑 N(으)로 전환" 단축키 켜기 (Ctrl+1 ~ Ctrl+0)
+    //#region "데스크탑 N(으)로 전환" 단축키 켜기 (⌃⌥⇧1 ~ ⌃⌥⇧0)
+    // Ctrl+숫자는 화면 캡처 앱 등과 겹치기 쉬워, 사람이 잘 쓰지 않는 ⌃⌥⇧ 조합을 쓴다.
+    // DeskJump 는 설정에 저장된 조합을 그대로 읽어 보내므로 사용자가 직접 누를 일은 없다.
+    private static let directHotkeyModifiers = 0x40000 | 0x80000 | 0x20000
     // 숫자 1~9, 0 의 (ASCII, 가상 키코드)
     private static let digitKeys: [(ascii: Int, keyCode: Int)] = [
         (49, 18), (50, 19), (51, 20), (52, 21), (53, 23), (54, 22), (55, 26), (56, 28), (57, 25), (48, 29),
@@ -57,14 +60,14 @@ enum SpaceSwitcher {
         if !hasDirectHotkeys { enableDirectHotkeys() }
     }
 
-    /// 시스템 설정의 Mission Control 단축키 "Switch to Desktop 1~10" 을 Ctrl+숫자로 켠다
+    /// 시스템 설정의 Mission Control 단축키 "Switch to Desktop 1~10" 을 ⌃⌥⇧+숫자로 켠다
     static func enableDirectHotkeys() {
         let domain = "com.apple.symbolichotkeys" as CFString
         var table = symbolicHotkeys()
         for (i, key) in digitKeys.enumerated() {
             table[String(desktopBaseID + i + 1)] = [
                 "enabled": true,
-                "value": ["type": "standard", "parameters": [key.ascii, key.keyCode, 0x40000]],
+                "value": ["type": "standard", "parameters": [key.ascii, key.keyCode, directHotkeyModifiers]],
             ] as [String: Any]
         }
         CFPreferencesSetAppValue("AppleSymbolicHotKeys" as CFString, table as CFDictionary, domain)
