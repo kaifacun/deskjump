@@ -4,3 +4,4 @@ DeskJump.app/
 dist/
 .DS_Store
 credentials/
+.claude/
