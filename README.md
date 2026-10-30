@@ -87,36 +87,7 @@ cd deskjump
 
 ### Releasing (maintainers)
 
-There are two ways to publish a release. Both build a Universal app, sign it with Developer ID, notarize it, publish a GitHub release and update the cask in [kaifacun/homebrew-tap](https://github.com/kaifacun/homebrew-tap).
-
-**From a Mac that has the signing certificate:**
-
-```bash
-./release.sh 1.0.1
-```
-
-This needs, once per Mac:
-
-- the *Developer ID Application* certificate in the keychain
-- `xcrun notarytool store-credentials deskjump-notary --apple-id <email> --team-id <TEAMID>`
-- `gh auth login`
-
-**From any computer, via GitHub Actions:**
-
-```bash
-git tag v1.0.1 && git push origin v1.0.1
-```
-
-This runs [`.github/workflows/release.yml`](.github/workflows/release.yml). The workflow skips tags that `release.sh` already published. It needs these repository secrets:
-
-| Secret | Value |
-|---|---|
-| `DEVELOPER_ID_CERT_P12_BASE64` | `base64 -i DeveloperID.p12` of your *Developer ID Application* certificate + private key |
-| `DEVELOPER_ID_CERT_PASSWORD` | Password of that `.p12` |
-| `APPLE_ID` | Apple ID email used for notarization |
-| `APPLE_TEAM_ID` | 10-character Team ID |
-| `APPLE_APP_PASSWORD` | App-specific password from [account.apple.com](https://account.apple.com) |
-| `TAP_GITHUB_TOKEN` | Fine-grained token with *Contents: read & write* on `kaifacun/homebrew-tap` |
+See [docs/RELEASING.md](docs/RELEASING.md). In short: `./release.sh 1.0.1` on a Mac with the signing certificate, or `git tag v1.0.1 && git push origin v1.0.1` from anywhere (GitHub Actions signs, notarizes and publishes).
 
 ## License
 
