@@ -48,6 +48,8 @@ DeskJump needs macOS 13 Ventura or later and runs on Apple silicon and Intel Mac
 
 DeskJump checks GitHub for a new version once a day. When there is one, a small dot appears next to the numbers. Right-click › **Update to DeskJump x.y.z…** downloads it, checks that it's signed by the DeskJump developer and notarized by Apple, replaces the app and restarts it. You can also check any time with right-click › **Check for Updates…**.
 
+In-app updates start with version 1.0.3. If you have 1.0.2 or earlier, update once with Homebrew or manually as below.
+
 With Homebrew:
 
 ```bash
